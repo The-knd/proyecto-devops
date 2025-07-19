@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: |
+        run: |  
           docker build -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
 
       - name: Save Docker image as tar
