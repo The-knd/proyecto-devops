@@ -29,9 +29,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r app/requirements.txt
           pip install pytest
+          pip install httpx
 
       - name: Run tests
-        run: pytest app/src/test_app.py
+        run: |
+          cd app
+          pytest test_app.py
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
