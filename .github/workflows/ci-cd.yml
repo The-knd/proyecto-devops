@@ -9,7 +9,6 @@ on:
 jobs:
 
   deploy:
-    needs: build-test-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     steps:
@@ -30,6 +29,7 @@ jobs:
             docker-compose up -d --build
 
   build-test-push:
+    needs: deploy
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: fastapi-app
