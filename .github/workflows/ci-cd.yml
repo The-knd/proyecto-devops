@@ -12,7 +12,7 @@ jobs:
     env:
       IMAGE_NAME: fastapi-app
       IMAGE_TAG: latest
-      NEXUS_EC2_HOST: ${{ secrets.NEXUS_EC2_HOST }}   # IP pública EC2
+      NEXUS_EC2_HOST: ${{ secrets.EC2_HOST }}   # IP pública EC2
       NEXUS_EC2_PORT: ${{ secrets.NEXUS_EC2_PORT }}   # Puerto Docker registry Nexus (ej: 8082)
       NEXUS_REPO: ${{ secrets.NEXUS_REPO }}           # Nombre del repo en Nexus (ej: docker-hosted)
       NEXUS_USER: ${{ secrets.NEXUS_USER }}
@@ -73,11 +73,11 @@ jobs:
       - name: Log in to Nexus Docker registry (EC2)
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}
+          registry: ${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}
           username: ${{ env.NEXUS_USER }}
           password: ${{ env.NEXUS_PASSWORD }}
 
       - name: Tag and push Docker image to Nexus (EC2)
         run: |
-          docker tag fastapi-app:latest ${{ env.EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/${{ env.NEXUS_REPO }}/fastapi-app:latest
+          docker tag fastapi-app:latest ${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/${{ env.NEXUS_REPO }}/fastapi-app:latest
           docker push ${{ env.EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/${{ env.NEXUS_REPO }}/fastapi-app:latest
