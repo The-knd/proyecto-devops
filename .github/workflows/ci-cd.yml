@@ -54,7 +54,10 @@ jobs:
             docker-compose -f docker-compose.fastapi.yaml up -d
             sleep 10
             FASTAPI_ID=$(docker ps -qf "ancestor=fastapi-app:latest")
-            docker exec $FASTAPI_ID pytest app/test_app.py
+            echo "[DEBUG] Archivos en /app dentro del contenedor:"
+            docker exec $FASTAPI_ID ls -l /app
+            echo "[DEBUG] Ejecutando pytest:"
+            docker exec $FASTAPI_ID pytest test_app.py
             # El contenedor permanece levantado
 
       - name: Log in to Nexus Docker registry
