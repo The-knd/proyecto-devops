@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 jobs:
-  build-test-push:
+  build-push-deploy:
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: fastapi-app
@@ -16,19 +16,42 @@ jobs:
       NEXUS_REPO: ${{ secrets.NEXUS_REPO }}
       NEXUS_USER: ${{ secrets.NEXUS_USER }}
       NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+      EC2_PATH: /home/ec2-user/proyecto-devops/
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build and run FastAPI container (compose)
+      - name: Build Docker image
         run: |
-          docker compose -f docker-compose.fastapi.yaml build
-          docker compose -f docker-compose.fastapi.yaml up -d
+          docker build -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
 
-      - name: Run unit tests inside FastAPI container
+      - name: Save Docker image as tar
         run: |
-          FASTAPI_ID=$(docker ps -qf "ancestor=fastapi-app:${{ github.sha }}")
-          docker exec $FASTAPI_ID pytest app/test_app.py
+          docker save $IMAGE_NAME:$IMAGE_TAG -o fastapi-app.tar
+
+      - name: Copy image, compose y código a EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          source: "fastapi-app.tar,docker-compose.fastapi.yaml,app/"
+          target: ${{ env.EC2_PATH }}
+
+      - name: Deploy and test on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd $EC2_PATH
+            docker load -i fastapi-app.tar
+            docker compose -f docker-compose.fastapi.yaml up -d
+            sleep 10
+            FASTAPI_ID=$(docker ps -qf "ancestor=fastapi-app:${{ github.sha }}")
+            docker exec $FASTAPI_ID pytest app/test_app.py
+            # El contenedor permanece levantado
 
       - name: Log in to Nexus Docker registry
         uses: docker/login-action@v3
