@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: fastapi-app
-      IMAGE_TAG: ${{ github.sha }}
+      IMAGE_TAG: latest
       NEXUS_URL: ${{ secrets.NEXUS_URL }}
       NEXUS_REPO: ${{ secrets.NEXUS_REPO }}
       NEXUS_USER: ${{ secrets.NEXUS_USER }}
@@ -53,7 +53,7 @@ jobs:
             docker load -i fastapi-app.tar
             docker-compose -f docker-compose.fastapi.yaml up -d
             sleep 10
-            FASTAPI_ID=$(docker ps -qf "ancestor=fastapi-app:${{ github.sha }}")
+            FASTAPI_ID=$(docker ps -qf "ancestor=fastapi-app:latest")
             docker exec $FASTAPI_ID pytest app/test_app.py
             # El contenedor permanece levantado
 
@@ -66,5 +66,5 @@ jobs:
 
       - name: Tag and push Docker image to Nexus
         run: |
-          docker tag fastapi-app:${{ github.sha }} $NEXUS_URL/$NEXUS_REPO/fastapi-app:${{ github.sha }}
-          docker push $NEXUS_URL/$NEXUS_REPO/fastapi-app:${{ github.sha }}
+          docker tag fastapi-app:latest $NEXUS_URL/$NEXUS_REPO/fastapi-app:latest
+          docker push $NEXUS_URL/$NEXUS_REPO/fastapi-app:latest
