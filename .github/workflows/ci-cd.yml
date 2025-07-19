@@ -65,10 +65,10 @@ jobs:
             docker exec $FASTAPI_ID pytest test_app.py
             # El contenedor permanece levantado
 
-      - name: Allow insecure registry for Nexus EC2
-        run: |
-          echo '{ "insecure-registries": ["'${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}'"] }' | sudo tee /etc/docker/daemon.json
-          sudo systemctl restart docker
+      #- name: Allow insecure registry for Nexus EC2
+      #  run: |
+      #    echo '{ "insecure-registries": ["'${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}'"] }' | sudo tee /etc/docker/daemon.json
+      #    sudo systemctl restart docker
 
       - name: Log in to Nexus Docker registry (EC2)
         uses: docker/login-action@v3
