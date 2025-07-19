@@ -51,7 +51,7 @@ jobs:
             cd /home/ec2-user/proyecto-devops
             pwd
             docker load -i fastapi-app.tar
-            docker compose -f docker-compose.fastapi.yaml up -d
+            docker-compose -f docker-compose.fastapi.yaml up -d
             sleep 10
             FASTAPI_ID=$(docker ps -qf "ancestor=fastapi-app:${{ github.sha }}")
             docker exec $FASTAPI_ID pytest app/test_app.py
