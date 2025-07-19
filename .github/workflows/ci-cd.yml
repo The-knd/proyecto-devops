@@ -96,4 +96,4 @@ jobs:
       - name: Tag and push Docker image to Nexus (EC2)
         run: |
           docker tag fastapi-app:latest ${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/${{ env.NEXUS_REPO }}/fastapi-app:latest
-          docker push ${{ env.EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/${{ env.NEXUS_REPO }}/fastapi-app:latest
+          docker push ${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/${{ env.NEXUS_REPO }}/fastapi-app:latest
