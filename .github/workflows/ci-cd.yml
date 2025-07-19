@@ -85,21 +85,23 @@ jobs:
             sleep 2
           done
 
-      - name: Debug Nexus connection and configuration
-        run: |
+      - name: Debug Nexus connection and configuration on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            mkdir -p ${{ env.EC2_PATH }}/debug
 
-          # Guardar variables de entorno relacionadas a Nexus
-          echo "=== Variables de entorno Nexus ===" > ${{ env.EC2_PATH }}debug/env_snapshot.txt
-          env | grep NEXUS >> ${{ env.EC2_PATH }}debug/env_snapshot.txt
+            echo "=== Variables de entorno Nexus ===" > ${{ env.EC2_PATH }}/debug/env_snapshot.txt
+            env | grep NEXUS >> ${{ env.EC2_PATH }}/debug/env_snapshot.txt
 
-          # Guardar el comando curl ejecutado (estructura del call)
-          echo "curl -u ${{ env.NEXUS_USER }}:${{ env.NEXUS_PASSWORD }} http://${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/v2/" > ${{ env.EC2_PATH }}/debug/curl_debug.log
+            echo "curl -u ${{ env.NEXUS_USER }}:${{ env.NEXUS_PASSWORD }} http://${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/v2/" > ${{ env.EC2_PATH }}/debug/curl_debug.log
+            curl -v -u ${{ env.NEXUS_USER }}:${{ env.NEXUS_PASSWORD }} http://${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/v2/ >> ${{ env.EC2_PATH }}/debug/curl_debug.log 2>&1
 
-          # Ejecutar curl con verbose y guardar salida completa
-          curl -v -u ${{ env.NEXUS_USER }}:${{ env.NEXUS_PASSWORD }} http://${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/v2/ >> ${{ env.EC2_PATH }}/debug/curl_debug.log 2>&1
+            docker logs proyecto-devops-nexus-1 > ${{ env.EC2_PATH }}/debug/nexus_container_logs.txt || echo "No se pudo obtener logs de Nexus"
 
-          # También guardar logs del contenedor Nexus si aplica
-          docker logs proyecto-devops-nexus-1 > ${{ env.EC2_PATH }}/debug/nexus_container_logs.txt || echo "No se pudo obtener logs de Nexus"
 
 
       - name: Log in to Nexus Docker registry (EC2)
