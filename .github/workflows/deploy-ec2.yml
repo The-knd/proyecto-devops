@@ -3,7 +3,7 @@ name: Deploy FastAPI App to EC2
 on:
   push:
     branches:
-      - main  # Cambia si usas otra rama principal
+      - dockerfile 
 
 jobs:
   deploy:
