@@ -49,6 +49,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             cd $EC2_PATH
+            pwd
             docker load -i fastapi-app.tar
             docker compose -f docker-compose.fastapi.yaml up -d
             sleep 10
