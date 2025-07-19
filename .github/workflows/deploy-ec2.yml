@@ -3,7 +3,7 @@ name: Deploy FastAPI App to EC2
 on:
   push:
     branches:
-      - dockerfile 
+      - feature/dockerfile 
 
 jobs:
   deploy:
