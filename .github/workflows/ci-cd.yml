@@ -2,41 +2,16 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [develop, main]
+    branches: [main, develop]
   pull_request:
-    branches: [develop, main]
+    branches: [main, develop]
 
 jobs:
-  deploy-nexus:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Deploy only Nexus to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_KEY }}
-          script: |
-            cd /home/ubuntu/proyecto-devops
-            git pull origin main
-            docker-compose up -d nexus
-      - name: Wait for Nexus to be ready
-        run: |
-          for i in {1..30}; do
-            if curl -s http://${{ secrets.EC2_HOST }}:8081/ &>/dev/null; then
-              echo "Nexus is up!"; exit 0;
-            fi
-            echo "Waiting for Nexus..."; sleep 10;
-          done
-          echo "Nexus did not start in time"; exit 1
-
   build-test-push:
-    needs: deploy-nexus
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: fastapi-app
+      IMAGE_TAG: ${{ github.sha }}
       NEXUS_URL: ${{ secrets.NEXUS_URL }}
       NEXUS_REPO: ${{ secrets.NEXUS_REPO }}
       NEXUS_USER: ${{ secrets.NEXUS_USER }}
@@ -44,60 +19,25 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-      - name: Install dependencies
+
+      - name: Build and run FastAPI container (compose)
         run: |
-          python -m pip install --upgrade pip
-          pip install -r app/requirements.txt
-          pip install pytest
-          pip install httpx
-      - name: Run tests
+          docker-compose -f docker-compose.fastapi.yaml build
+          docker-compose -f docker-compose.fastapi.yaml up -d
+
+      - name: Run unit tests inside FastAPI container
         run: |
-          cd app
-          pytest test_app.py
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+          FASTAPI_ID=$(docker ps -qf "ancestor=fastapi-app:${{ github.sha }}")
+          docker exec $FASTAPI_ID pytest app/test_app.py
+
       - name: Log in to Nexus Docker registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.NEXUS_URL }}
           username: ${{ env.NEXUS_USER }}
           password: ${{ env.NEXUS_PASSWORD }}
-      - name: Build Docker image
-        run: |
-          docker build -t ${{ env.NEXUS_URL }}/${{ env.NEXUS_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -f Dockerfile .
-      - name: Push Docker image to Nexus
-        run: |
-          docker push ${{ env.NEXUS_URL }}/${{ env.NEXUS_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-  deploy-stack:
-    needs: build-test-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Deploy full stack to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_KEY }}
-          script: |
-            cd /home/ubuntu/proyecto-devops
-            git pull origin main
-            docker-compose down
-            docker-compose pull
-            docker-compose up -d --build
-
-  e2e-test:
-    needs: deploy-stack
-    runs-on: ubuntu-latest
-    steps:
-      - name: Test /metrics endpoint (E2E)
+      - name: Tag and push Docker image to Nexus
         run: |
-          sleep 30  # Espera a que el servicio esté arriba
-          curl -f http://${{ secrets.EC2_HOST }}:5000/metrics | grep http_requests_total
+          docker tag fastapi-app:${{ github.sha }} $NEXUS_URL/$NEXUS_REPO/fastapi-app:${{ github.sha }}
+          docker push $NEXUS_URL/$NEXUS_REPO/fastapi-app:${{ github.sha }}
