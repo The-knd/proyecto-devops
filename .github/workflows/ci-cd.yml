@@ -29,6 +29,9 @@ jobs:
         run: |
           docker save $IMAGE_NAME:$IMAGE_TAG -o fastapi-app.tar
 
+      - name: Fix permissions for fastapi-app.tar
+        run: chmod 644 fastapi-app.tar
+
       - name: Copy image, compose y código a EC2
         uses: appleboy/scp-action@v0.1.7
         with:
