@@ -2,4 +2,4 @@ fastapi
 uvicorn
 pydantic
 prometheus_client
-httpx
+pytest
