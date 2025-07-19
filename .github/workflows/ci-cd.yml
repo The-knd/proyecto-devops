@@ -22,8 +22,8 @@ jobs:
 
       - name: Build and run FastAPI container (compose)
         run: |
-          docker compose -f docker compose.fastapi.yaml build
-          docker compose -f docker compose.fastapi.yaml up -d
+          docker compose -f docker-compose.fastapi.yaml build
+          docker compose -f docker-compose.fastapi.yaml up -d
 
       - name: Run unit tests inside FastAPI container
         run: |
