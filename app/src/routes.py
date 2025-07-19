@@ -38,3 +38,16 @@ def add_sale(sale: SaleIn):
         raise HTTPException(status_code=400, detail="Invalid client or product ID")
     sales.append(sale.dict())
     return {"message": "Sale recorded"}
+
+# NUEVOS ENDPOINTS GET
+@router.get("/clients")
+def list_clients():
+    return list(clients.values())
+
+@router.get("/products")
+def list_products():
+    return list(products.values())
+
+@router.get("/sales")
+def list_sales():
+    return sales
