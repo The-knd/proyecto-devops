@@ -1,9 +1,7 @@
 name: Deploy FastAPI App to EC2
 
 on:
-  push:
-    branches:
-      - feature/dockerfile 
+  workflow_dispatch:  # Ejecutable manualmente
 
 jobs:
   deploy:
