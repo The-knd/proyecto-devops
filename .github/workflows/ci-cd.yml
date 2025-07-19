@@ -104,12 +104,18 @@ jobs:
 
 
 
+      # - name: Log in to Nexus Docker registry (EC2)
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}
+      #     username: ${{ env.NEXUS_USER }}
+      #     password: ${{ env.NEXUS_PASSWORD }}
+
       - name: Log in to Nexus Docker registry (EC2)
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}
-          username: ${{ env.NEXUS_USER }}
-          password: ${{ env.NEXUS_PASSWORD }}
+        run: |
+          echo "Logging in to Nexus Docker registry..."
+          echo "${{ secrets.NEXUS_PASSWORD }}" | docker login http://${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }} -u ${{ secrets.NEXUS_USER }} --password-stdin
+          echo "Login successful."
 
       - name: Tag and push Docker image to Nexus (EC2)
         run: |
