@@ -56,6 +56,10 @@ jobs:
             FASTAPI_ID=$(docker ps -qf "ancestor=fastapi-app:latest")
             echo "[DEBUG] Archivos en /app dentro del contenedor:"
             docker exec $FASTAPI_ID ls -l /app
+            echo "[DEBUG] Archivos en /app/src dentro del contenedor:"
+            docker exec $FASTAPI_ID ls -l /app/src
+            echo "[DEBUG] Contenido de requirements.txt dentro del contenedor:"
+            docker exec $FASTAPI_ID cat /app/requirements.txt
             echo "[DEBUG] Ejecutando pytest:"
             docker exec $FASTAPI_ID pytest test_app.py
             # El contenedor permanece levantado
