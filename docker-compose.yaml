@@ -7,8 +7,6 @@ services:
       - "8000:8000"
     depends_on:
       - prometheus
-    env_file:
-      - .env
 
   nexus:
     image: sonatype/nexus3
