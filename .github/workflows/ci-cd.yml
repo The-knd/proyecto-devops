@@ -48,7 +48,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            cd /home/ec2-user/proeycto-devops
+            cd /home/ec2-user/proyecto-devops
             pwd
             docker load -i fastapi-app.tar
             docker compose -f docker-compose.fastapi.yaml up -d
