@@ -1,14 +1,6 @@
 version: '3.8'
 
 services:
-  fastapi:
-    build: .
-    ports:
-      - "8000:8000"
-    depends_on:
-      - prometheus
-    env_file:
-      - .env
 
   nexus:
     image: sonatype/nexus3
@@ -33,8 +25,6 @@ services:
       - "3000:3000"
     depends_on:
       - prometheus
-    env_file:
-      - .env
     volumes:
       - grafana-data:/var/lib/grafana
 
