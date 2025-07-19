@@ -73,7 +73,7 @@ jobs:
       - name: Log in to Nexus Docker registry (EC2)
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}
+          registry: http://${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}
           username: ${{ env.NEXUS_USER }}
           password: ${{ env.NEXUS_PASSWORD }}
 
