@@ -89,8 +89,8 @@ jobs:
         run: |
 
           # Guardar variables de entorno relacionadas a Nexus
-          echo "=== Variables de entorno Nexus ===" > ${{ env.EC2_PATH }}/debug/env_snapshot.txt
-          env | grep NEXUS >> ${{ env.EC2_PATH }}/debug/env_snapshot.txt
+          echo "=== Variables de entorno Nexus ===" > ${{ env.EC2_PATH }}debug/env_snapshot.txt
+          env | grep NEXUS >> ${{ env.EC2_PATH }}debug/env_snapshot.txt
 
           # Guardar el comando curl ejecutado (estructura del call)
           echo "curl -u ${{ env.NEXUS_USER }}:${{ env.NEXUS_PASSWORD }} http://${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/v2/" > ${{ env.EC2_PATH }}/debug/curl_debug.log
