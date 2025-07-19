@@ -7,6 +7,28 @@ on:
     branches: [develop, main]
 
 jobs:
+
+  deploy:
+    needs: build-test-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd /home/ubuntu/proyecto-devops
+            git pull origin main
+            docker-compose down
+            docker-compose pull
+            docker-compose up -d --build
+
   build-test-push:
     runs-on: ubuntu-latest
     env:
