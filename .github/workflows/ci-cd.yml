@@ -111,6 +111,11 @@ jobs:
       #     username: ${{ env.NEXUS_USER }}
       #     password: ${{ env.NEXUS_PASSWORD }}
 
+      - name: Debug Nexus registry with curl
+        run: |
+          curl -v -u ${{ secrets.NEXUS_USER }}:${{ secrets.NEXUS_PASSWORD }} http://${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/v2/
+
+
       - name: Log in to Nexus Docker registry (EC2)
         run: |
           echo "Logging in to Nexus Docker registry..."
