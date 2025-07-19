@@ -87,8 +87,6 @@ jobs:
 
       - name: Debug Nexus connection and configuration
         run: |
-          # Crear carpeta de debug si no existe
-          mkdir -p ${{ env.EC2_PATH }}/debug
 
           # Guardar variables de entorno relacionadas a Nexus
           echo "=== Variables de entorno Nexus ===" > ${{ env.EC2_PATH }}/debug/env_snapshot.txt
