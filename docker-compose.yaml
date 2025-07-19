@@ -6,6 +6,7 @@ services:
     image: sonatype/nexus3
     ports:
       - "8081:8081"
+      - "8082:8082"   # Registro Docker (añadir esta línea)
     volumes:
       - nexus-data:/nexus-data
 

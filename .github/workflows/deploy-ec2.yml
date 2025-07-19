@@ -31,4 +31,6 @@ jobs:
             cd proyecto-devops
             docker-compose down
             docker-compose up -d --build
+            cd ..
+            rm -rf proyecto-devops
           EOF
