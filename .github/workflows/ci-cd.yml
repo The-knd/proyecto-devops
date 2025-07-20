@@ -1,0 +1,128 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: fastapi-app
+      IMAGE_TAG: latest
+      NEXUS_EC2_HOST: ${{ secrets.EC2_HOST }}   # IP pública EC2
+      NEXUS_EC2_PORT: ${{ secrets.NEXUS_EC2_PORT }}   # Puerto Docker registry Nexus (ej: 8082)
+      NEXUS_REPO: ${{ secrets.NEXUS_REPO }}           # Nombre del repo en Nexus (ej: docker-hosted)
+      NEXUS_USER: ${{ secrets.NEXUS_USER }}
+      NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+      EC2_PATH: /home/ec2-user/proyecto-devops/
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |  
+          docker build -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
+
+      - name: Save Docker image as tar
+        run: |
+          docker save $IMAGE_NAME:$IMAGE_TAG -o fastapi-app.tar
+
+      - name: Fix permissions for fastapi-app.tar
+        run: chmod 644 fastapi-app.tar
+
+      - name: Copy image, compose y código a EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          source: "fastapi-app.tar,docker-compose.fastapi.yaml,app/"
+          target: ${{ env.EC2_PATH }}
+
+      - name: Deploy and test on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd /home/ec2-user/proyecto-devops
+            pwd
+            docker load -i fastapi-app.tar
+            docker-compose -f docker-compose.fastapi.yaml up -d
+            sleep 10
+            FASTAPI_ID=$(docker ps -qf "ancestor=fastapi-app:latest")
+            echo "[DEBUG] Archivos en /app dentro del contenedor:"
+            docker exec $FASTAPI_ID ls -l /app
+            echo "[DEBUG] Archivos en /app/src dentro del contenedor:"
+            docker exec $FASTAPI_ID ls -l /app/src
+            echo "[DEBUG] Contenido de requirements.txt dentro del contenedor:"
+            docker exec $FASTAPI_ID cat /app/requirements.txt
+            echo "[DEBUG] Ejecutando pytest:"
+            docker exec $FASTAPI_ID pytest test_app.py
+            # El contenedor permanece levantado
+
+      # - name: Allow insecure registry for Nexus EC2
+      #   run: |
+      #     echo '{ "insecure-registries": ["'${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}'"] }' | sudo tee /etc/docker/daemon.json
+      #     sudo systemctl restart docker
+
+      - name: Allow insecure registry for Nexus EC2
+        run: |
+          echo '{ "insecure-registries": ["'${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}'"] }' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+          # Esperar hasta que Docker esté disponible
+          for i in {1..10}; do
+            if docker info > /dev/null 2>&1; then
+              echo "Docker está listo"
+              break
+            fi
+            echo "Esperando a que Docker se reinicie..."
+            sleep 2
+          done
+
+      - name: Debug Nexus connection and configuration on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            mkdir -p ${{ env.EC2_PATH }}/debug
+
+            echo "=== Variables de entorno Nexus ===" > ${{ env.EC2_PATH }}/debug/env_snapshot.txt
+            env | grep NEXUS >> ${{ env.EC2_PATH }}/debug/env_snapshot.txt
+
+            echo "curl -u ${{ env.NEXUS_USER }}:${{ env.NEXUS_PASSWORD }} http://${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/v2/" > ${{ env.EC2_PATH }}/debug/curl_debug.log
+            curl -v -u ${{ env.NEXUS_USER }}:${{ env.NEXUS_PASSWORD }} http://${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/v2/ >> ${{ env.EC2_PATH }}/debug/curl_debug.log 2>&1
+
+            docker logs proyecto-devops-nexus-1 > ${{ env.EC2_PATH }}/debug/nexus_container_logs.txt || echo "No se pudo obtener logs de Nexus"
+
+
+
+      # - name: Log in to Nexus Docker registry (EC2)
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}
+      #     username: ${{ env.NEXUS_USER }}
+      #     password: ${{ env.NEXUS_PASSWORD }}
+
+      - name: Debug Nexus registry with curl
+        run: |
+          curl -v -u ${{ secrets.NEXUS_USER }}:${{ secrets.NEXUS_PASSWORD }} http://${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/v2/
+
+
+      - name: Log in to Nexus Docker registry (EC2)
+        run: |
+          echo "Logging in to Nexus Docker registry..."
+          echo "${{ secrets.NEXUS_PASSWORD }}" | docker login http://${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }} -u ${{ secrets.NEXUS_USER }} --password-stdin
+          echo "Login successful."
+
+      - name: Tag and push Docker image to Nexus (EC2)
+        run: |
+          docker tag fastapi-app:latest ${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/${{ env.NEXUS_REPO }}/fastapi-app:latest
+          docker push ${{ env.NEXUS_EC2_HOST }}:${{ env.NEXUS_EC2_PORT }}/${{ env.NEXUS_REPO }}/fastapi-app:latest
